@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:project_uts/core/constant/api_endpoints.dart';
+
 import 'package:project_uts/features/auth/presentation/providers/auth_provider.dart';
 import 'package:project_uts/features/auth/presentation/screens/splash_screen.dart';
 import 'package:project_uts/features/auth/presentation/screens/login_screen.dart';
@@ -22,7 +25,14 @@ import 'package:project_uts/features/ticket/presentation/providers/ticket_provid
 import 'package:project_uts/features/notification/presentation/providers/notification_provider.dart';
 import 'package:project_uts/features/notification/presentation/screens/notification_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: ApiEndpoints.supabaseUrl,
+    anonKey: ApiEndpoints.supabaseAnonKey,
+  );
+
   runApp(const MyApp());
 }
 
@@ -123,7 +133,8 @@ class MyApp extends StatelessWidget {
         centerTitle: true,
         elevation: 0,
         backgroundColor:
-            isDark ? const Color(0xFF121212) : Colors.white,
+            isDark ? const Color(0xFF121212) : const Color(0xFFF1F5F9),
+        surfaceTintColor: Colors.transparent,
       ),
     );
   }

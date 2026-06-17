@@ -1,116 +1,52 @@
+import 'package:project_uts/features/ticket/data/ticket_remote_datasource.dart';
+import 'package:project_uts/features/ticket/domain/ticket_model.dart';
+import 'package:project_uts/features/ticket/domain/comment_model.dart';
+
 class TicketRepository {
-  final List<TicketModel> _dummyTickets = [
-    TicketModel(
-      id: '1',
-      title: 'Wifi tidak konek',
-      description: 'Internet kampus mati',
-      status: TicketStatus.open,
-      userId: 'user_1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    TicketModel(
-      id: '2',
-      title: 'Printer error',
-      description: 'Tidak bisa print',
-      status: TicketStatus.inProgress,
-      userId: 'user_2',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-  ];
+  final _datasource = TicketRemoteDatasource();
 
-  // =========================
-  // GET TICKETS
-  // =========================
-  Future<List<TicketModel>> getTickets() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return _dummyTickets;
-  }
+  Future<List<TicketModel>> getTickets(String userId) =>
+      _datasource.getTickets(userId);
 
-  // =========================
-  // GET DETAIL
-  // =========================
-  Future<TicketModel> getTicketDetail(String ticketId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return _dummyTickets.firstWhere((t) => t.id == ticketId);
-  }
+  Future<List<TicketModel>> getAllTickets() =>
+      _datasource.getAllTickets();
 
-  // =========================
-  // CREATE
-  // =========================
+  Future<TicketModel> getTicketDetail(String ticketId) =>
+      _datasource.getTicketDetail(ticketId);
+
   Future<TicketModel> createTicket({
+    required String userId,
     required String title,
     required String description,
-    required String userId,
-    String? attachmentUrl,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    String? filePath,
+  }) =>
+      _datasource.createTicket(
+        userId: userId,
+        title: title,
+        description: description,
+        filePath: filePath,
+      );
 
-    final newTicket = TicketModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      description: description,
-      status: TicketStatus.open,
-      userId: userId,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+  Future<TicketModel> updateTicketStatus(
+          String ticketId, TicketStatus status) =>
+      _datasource.updateTicketStatus(ticketId, status);
 
-    _dummyTickets.insert(0, newTicket);
-    return newTicket;
-  }
+  Future<TicketModel> assignTicket(String ticketId, String assignedTo) =>
+      _datasource.assignTicket(ticketId, assignedTo);
 
-  // =========================
-  // UPDATE STATUS
-  // =========================
-  Future<void> updateTicketStatus(
-      String ticketId, TicketStatus status) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final index = _dummyTickets.indexWhere((t) => t.id == ticketId);
-    if (index != -1) {
-      _dummyTickets[index] =
-          _dummyTickets[index].copyWith(status: status);
-    }
-  }
-
-  // =========================
-  // ASSIGN
-  // =========================
-  Future<void> assignTicket(String ticketId, String assignee) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final index = _dummyTickets.indexWhere((t) => t.id == ticketId);
-    if (index != -1) {
-      _dummyTickets[index] =
-          _dummyTickets[index].copyWith(assignedTo: assignee);
-    }
-  }
-
-  // =========================
-  // COMMENT
-  // =========================
-  Future<List<CommentModel>> getComments(String ticketId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return [];
-  }
+  Future<List<CommentModel>> getComments(String ticketId) =>
+      _datasource.getComments(ticketId);
 
   Future<CommentModel> addComment({
     required String ticketId,
     required String userId,
     required String userName,
     required String message,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    return CommentModel(
-      id: DateTime.now().toString(),
-      ticketId: ticketId,
-      userId: userId,
-      userName: userName,
-      message: message,
-      createdAt: DateTime.now(),
-    );
-  }
+  }) =>
+      _datasource.addComment(
+        ticketId: ticketId,
+        userId: userId,
+        userName: userName,
+        message: message,
+      );
 }

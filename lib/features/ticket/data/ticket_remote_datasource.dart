@@ -1,31 +1,44 @@
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:project_uts/features/ticket/domain/ticket_model.dart';
 import 'package:project_uts/features/ticket/domain/comment_model.dart';
+import 'package:project_uts/core/constant/api_endpoints.dart';
+import 'package:project_uts/core/network/supabase_client.dart';
 
 class TicketRemoteDatasource {
-  final supabase = Supabase.instance.client;
+  final _client = SupabaseClientHelper.client;
 
   // =========================
-  // 📋 GET ALL TICKETS
+  // GET TICKETS (user)
   // =========================
   Future<List<TicketModel>> getTickets(String userId) async {
-    final response = await supabase
-        .from('tickets')
+    final response = await _client
+        .from(ApiEndpoints.ticketsTable)
         .select()
         .eq('user_id', userId)
         .order('created_at', ascending: false);
 
-    return (response as List)
-        .map((e) => TicketModel.fromJson(e))
-        .toList();
+    return (response as List).map((e) => TicketModel.fromJson(e)).toList();
   }
 
   // =========================
-  // 👀 GET DETAIL TICKET
+  // GET ALL TICKETS (admin/helpdesk)
+  // =========================
+  Future<List<TicketModel>> getAllTickets() async {
+    final response = await _client
+        .from(ApiEndpoints.ticketsTable)
+        .select()
+        .order('created_at', ascending: false);
+
+    return (response as List).map((e) => TicketModel.fromJson(e)).toList();
+  }
+
+  // =========================
+  // GET DETAIL TICKET
   // =========================
   Future<TicketModel> getTicketDetail(String ticketId) async {
-    final response = await supabase
-        .from('tickets')
+    final response = await _client
+        .from(ApiEndpoints.ticketsTable)
         .select()
         .eq('id', ticketId)
         .single();
@@ -34,7 +47,7 @@ class TicketRemoteDatasource {
   }
 
   // =========================
-  // ➕ CREATE TICKET
+  // CREATE TICKET
   // =========================
   Future<TicketModel> createTicket({
     required String userId,
@@ -44,24 +57,22 @@ class TicketRemoteDatasource {
   }) async {
     String? fileUrl;
 
-    // =========================
-    // 📤 UPLOAD FILE (OPTIONAL)
-    // =========================
+    // Upload file jika ada
     if (filePath != null) {
       final fileName =
           '${DateTime.now().millisecondsSinceEpoch}_${filePath.split('/').last}';
 
-      await supabase.storage
-          .from('tickets')
+      await _client.storage
+          .from(ApiEndpoints.attachmentsBucket)
           .upload(fileName, File(filePath));
 
-      fileUrl = supabase.storage
-          .from('tickets')
+      fileUrl = _client.storage
+          .from(ApiEndpoints.attachmentsBucket)
           .getPublicUrl(fileName);
     }
 
-    final response = await supabase
-        .from('tickets')
+    final response = await _client
+        .from(ApiEndpoints.ticketsTable)
         .insert({
           'title': title,
           'description': description,
@@ -78,34 +89,70 @@ class TicketRemoteDatasource {
   }
 
   // =========================
-  // 💬 GET COMMENTS
+  // UPDATE STATUS
+  // =========================
+  Future<TicketModel> updateTicketStatus(
+      String ticketId, TicketStatus status) async {
+    final response = await _client
+        .from(ApiEndpoints.ticketsTable)
+        .update({
+          'status': status.name,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', ticketId)
+        .select()
+        .single();
+
+    return TicketModel.fromJson(response);
+  }
+
+  // =========================
+  // ASSIGN TICKET
+  // =========================
+  Future<TicketModel> assignTicket(
+      String ticketId, String assignedTo) async {
+    final response = await _client
+        .from(ApiEndpoints.ticketsTable)
+        .update({
+          'assigned_to': assignedTo,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', ticketId)
+        .select()
+        .single();
+
+    return TicketModel.fromJson(response);
+  }
+
+  // =========================
+  // GET COMMENTS
   // =========================
   Future<List<CommentModel>> getComments(String ticketId) async {
-    final response = await supabase
-        .from('comments')
+    final response = await _client
+        .from(ApiEndpoints.commentsTable)
         .select()
         .eq('ticket_id', ticketId)
         .order('created_at', ascending: true);
 
-    return (response as List)
-        .map((e) => CommentModel.fromJson(e))
-        .toList();
+    return (response as List).map((e) => CommentModel.fromJson(e)).toList();
   }
 
   // =========================
-  // ➕ ADD COMMENT
+  // ADD COMMENT
   // =========================
   Future<CommentModel> addComment({
     required String ticketId,
-    required String message,
     required String userId,
+    required String userName,
+    required String message,
   }) async {
-    final response = await supabase
-        .from('comments')
+    final response = await _client
+        .from(ApiEndpoints.commentsTable)
         .insert({
           'ticket_id': ticketId,
-          'message': message,
           'user_id': userId,
+          'user_name': userName,
+          'message': message,
           'created_at': DateTime.now().toIso8601String(),
         })
         .select()

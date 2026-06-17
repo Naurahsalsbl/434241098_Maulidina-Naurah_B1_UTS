@@ -35,6 +35,7 @@ class TicketModel {
   final TicketStatus status;
   final String userId;
   final String? assignedTo;
+  final String? attachmentUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -45,13 +46,11 @@ class TicketModel {
     required this.status,
     required this.userId,
     this.assignedTo,
+    this.attachmentUrl,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  // =========================
-  // JSON FROM SUPABASE
-  // =========================
   factory TicketModel.fromJson(Map<String, dynamic> json) {
     return TicketModel(
       id: json['id'] as String,
@@ -63,14 +62,12 @@ class TicketModel {
       ),
       userId: json['user_id'] as String,
       assignedTo: json['assigned_to'] as String?,
+      attachmentUrl: json['attachment_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
 
-  // =========================
-  // COPY WITH (FIX ERROR KAMU)
-  // =========================
   TicketModel copyWith({
     String? id,
     String? title,
@@ -78,6 +75,7 @@ class TicketModel {
     TicketStatus? status,
     String? userId,
     String? assignedTo,
+    String? attachmentUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -88,6 +86,7 @@ class TicketModel {
       status: status ?? this.status,
       userId: userId ?? this.userId,
       assignedTo: assignedTo ?? this.assignedTo,
+      attachmentUrl: attachmentUrl ?? this.attachmentUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

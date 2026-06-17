@@ -20,9 +20,20 @@ class CommentModel {
       id: json['id'] as String,
       ticketId: json['ticket_id'] as String,
       userId: json['user_id'] as String,
-      userName: json['user_name'] as String,
+      userName: json['user_name'] as String? ?? '',
       message: json['message'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'ticket_id': ticketId,
+      'user_id': userId,
+      'user_name': userName,
+      'message': message,
+      'created_at': createdAt.toIso8601String(),
+    };
   }
 }

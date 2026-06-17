@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:project_uts/features/ticket/presentation/providers/ticket_provider.dart';
 import 'package:project_uts/features/ticket/domain/ticket_model.dart';
+import 'package:project_uts/features/ticket/presentation/providers/ticket_provider.dart';
 
 class TicketStatsWidget extends StatelessWidget {
   const TicketStatsWidget({super.key});
@@ -9,46 +9,68 @@ class TicketStatsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TicketProvider>();
-    final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Statistik Tiket',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 4),
 
-        // TOTAL
+        // =========================
+        // TOTAL TICKET CARD
+        // =========================
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF64748B),
+                Color(0xFF475569),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Row(
             children: [
-              Icon(Icons.bar_chart, color: Colors.blue, size: 28),
-              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.confirmation_number_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
 
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    provider.totalTickets.toString(),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+              const SizedBox(width: 16),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Total Tiket',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text('Total Tiket'),
-                ],
+
+                    const SizedBox(height: 6),
+
+                    Text(
+                      provider.totalTickets.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -56,30 +78,34 @@ class TicketStatsWidget extends StatelessWidget {
 
         const SizedBox(height: 16),
 
+        // =========================
         // STATUS GRID
+        // =========================
         Row(
           children: [
             Expanded(
               child: _StatCard(
                 title: 'Open',
-                value: provider.countByStatus(TicketStatus.open).toString(),
-                color: Colors.red,
+                value: provider
+                    .countByStatus(TicketStatus.open)
+                    .toString(),
+                color: const Color(0xFFEF4444),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Expanded(
               child: _StatCard(
                 title: 'Progress',
                 value: provider
                     .countByStatus(TicketStatus.inProgress)
                     .toString(),
-                color: Colors.orange,
+                color: const Color(0xFFF59E0B),
               ),
             ),
           ],
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
 
         Row(
           children: [
@@ -89,10 +115,10 @@ class TicketStatsWidget extends StatelessWidget {
                 value: provider
                     .countByStatus(TicketStatus.resolved)
                     .toString(),
-                color: Colors.green,
+                color: const Color(0xFF22C55E),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Expanded(
               child: _StatCard(
                 title: 'Closed',
@@ -109,9 +135,6 @@ class TicketStatsWidget extends StatelessWidget {
   }
 }
 
-// =========================
-// 🔹 CARD KECIL
-// =========================
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -123,26 +146,58 @@ class _StatCard extends StatelessWidget {
     required this.color,
   });
 
+  IconData get icon {
+    switch (title) {
+      case 'Open':
+        return Icons.error_outline_rounded;
+      case 'Progress':
+        return Icons.pending_outlined;
+      case 'Resolved':
+        return Icons.check_circle_outline_rounded;
+      case 'Closed':
+        return Icons.lock_outline_rounded;
+      default:
+        return Icons.bar_chart;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      height: 115,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(
+            icon,
+            color: color,
+            size: 22,
+          ),
+
+          const Spacer(),
+
           Text(
             value,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
+
           const SizedBox(height: 4),
-          Text(title),
+
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
