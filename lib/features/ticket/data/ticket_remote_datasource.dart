@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:project_uts/features/ticket/domain/ticket_model.dart';
 import 'package:project_uts/features/ticket/domain/comment_model.dart';
+import 'package:project_uts/features/ticket/domain/ticket_history_model.dart';
+import 'package:project_uts/features/auth/domain/user_model.dart';
 import 'package:project_uts/core/constant/api_endpoints.dart';
 import 'package:project_uts/core/network/supabase_client.dart';
 
@@ -31,6 +33,30 @@ class TicketRemoteDatasource {
         .order('created_at', ascending: false);
 
     return (response as List).map((e) => TicketModel.fromJson(e)).toList();
+  }
+
+  // =========================
+  // GET ASSIGNED TICKETS (helpdesk)
+  // =========================
+  Future<List<TicketModel>> getAssignedTickets(String helpdeskId) async {
+    final response = await _client
+        .from(ApiEndpoints.ticketsTable)
+        .select()
+        .eq('assigned_to', helpdeskId)
+        .order('created_at', ascending: false);
+
+    return (response as List).map((e) => TicketModel.fromJson(e)).toList();
+  }
+
+  // =========================
+  // DELETE TICKET
+  // =========================
+  Future<void> deleteTicket(String ticketId) async {
+    // Hapus data terkait dulu (jaga-jaga kalau FK belum ON DELETE CASCADE)
+    await _client.from(ApiEndpoints.commentsTable).delete().eq('ticket_id', ticketId);
+    await _client.from(ApiEndpoints.ticketHistoryTable).delete().eq('ticket_id', ticketId);
+    await _client.from(ApiEndpoints.notificationsTable).delete().eq('ticket_id', ticketId);
+    await _client.from(ApiEndpoints.ticketsTable).delete().eq('id', ticketId);
   }
 
   // =========================
@@ -89,14 +115,13 @@ class TicketRemoteDatasource {
   }
 
   // =========================
-  // UPDATE STATUS
+  // ACCEPT STATUS
   // =========================
-  Future<TicketModel> updateTicketStatus(
-      String ticketId, TicketStatus status) async {
+  Future<TicketModel> acceptTicket(String ticketId) async {
     final response = await _client
         .from(ApiEndpoints.ticketsTable)
         .update({
-          'status': status.name,
+          'status': 'assigned',
           'updated_at': DateTime.now().toIso8601String(),
         })
         .eq('id', ticketId)
@@ -110,11 +135,14 @@ class TicketRemoteDatasource {
   // ASSIGN TICKET
   // =========================
   Future<TicketModel> assignTicket(
-      String ticketId, String assignedTo) async {
+      String ticketId,
+      String assignedTo,
+  ) async {
     final response = await _client
         .from(ApiEndpoints.ticketsTable)
         .update({
           'assigned_to': assignedTo,
+          'status': 'inProgress',
           'updated_at': DateTime.now().toIso8601String(),
         })
         .eq('id', ticketId)
@@ -122,6 +150,31 @@ class TicketRemoteDatasource {
         .single();
 
     return TicketModel.fromJson(response);
+  }
+
+  // =========================
+  // GET HELPDESK USERS (untuk Admin memilih penerima assign)
+  // =========================
+  Future<List<UserModel>> getHelpdeskUsers() async {
+    final response = await _client
+        .from(ApiEndpoints.usersTable)
+        .select()
+        .eq('role', 'helpdesk')
+        .order('name', ascending: true);
+
+    return (response as List).map((e) => UserModel.fromJson(e)).toList();
+  }
+
+  // =========================
+  // GET ADMIN USER IDS (untuk notifikasi tiket baru masuk)
+  // =========================
+  Future<List<String>> getAdminUserIds() async {
+    final response = await _client
+        .from(ApiEndpoints.usersTable)
+        .select('id')
+        .eq('role', 'admin');
+
+    return (response as List).map((e) => e['id'] as String).toList();
   }
 
   // =========================
@@ -159,5 +212,59 @@ class TicketRemoteDatasource {
         .single();
 
     return CommentModel.fromJson(response);
+  }
+
+  // =========================
+  // GET TICKET HISTORY
+  // =========================
+  Future<List<TicketHistoryModel>> getTicketHistory(String ticketId) async {
+    final response = await _client
+        .from(ApiEndpoints.ticketHistoryTable)
+        .select()
+        .eq('ticket_id', ticketId)
+        .order('created_at', ascending: true);
+
+    return (response as List)
+        .map((e) => TicketHistoryModel.fromJson(e))
+        .toList();
+  }
+
+  // =========================
+  // ADD TICKET HISTORY
+  // =========================
+  Future<void> addTicketHistory({
+    required String ticketId,
+    required String userId,
+    required String userName,
+    required String action,
+    String? oldStatus,
+    String? newStatus,
+  }) async {
+    await _client.from(ApiEndpoints.ticketHistoryTable).insert({
+      'ticket_id': ticketId,
+      'user_id': userId,
+      'user_name': userName,
+      'action': action,
+      'old_status': oldStatus,
+      'new_status': newStatus,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  // =========================
+  // FINISH TICKET
+  // =========================  
+  Future<TicketModel> finishTicket(String ticketId) async {
+    final response = await _client
+        .from(ApiEndpoints.ticketsTable)
+        .update({
+          'status': 'closed',
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', ticketId)
+        .select()
+        .single();
+
+    return TicketModel.fromJson(response);
   }
 }

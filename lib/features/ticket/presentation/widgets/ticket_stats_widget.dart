@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:project_uts/features/ticket/domain/ticket_model.dart';
 import 'package:project_uts/features/ticket/presentation/providers/ticket_provider.dart';
+import 'package:project_uts/core/constant/app_colors.dart';
 
 class TicketStatsWidget extends StatelessWidget {
   const TicketStatsWidget({super.key});
@@ -9,6 +10,7 @@ class TicketStatsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TicketProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -21,15 +23,22 @@ class TicketStatsWidget extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF64748B),
-                Color(0xFF475569),
-              ],
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                   ? const [
+                      Color(0xFF2C3E5D),
+                      Color(0xFF24344F),
+                    ]
+                  : const [
+                      Color(0xFF4F78D8),
+                      Color(0xFF2F6FE4),
+                    ],
+              ),
+              borderRadius: BorderRadius.circular(24),
             ),
-            borderRadius: BorderRadius.circular(24),
-          ),
           child: Row(
             children: [
               Container(
@@ -89,7 +98,7 @@ class TicketStatsWidget extends StatelessWidget {
                 value: provider
                     .countByStatus(TicketStatus.open)
                     .toString(),
-                color: const Color(0xFFEF4444),
+                color: AppColors.statusOpen,
               ),
             ),
             const SizedBox(width: 12),
@@ -99,7 +108,7 @@ class TicketStatsWidget extends StatelessWidget {
                 value: provider
                     .countByStatus(TicketStatus.inProgress)
                     .toString(),
-                color: const Color(0xFFF59E0B),
+                color: AppColors.statusInProgress,
               ),
             ),
           ],
@@ -111,11 +120,11 @@ class TicketStatsWidget extends StatelessWidget {
           children: [
             Expanded(
               child: _StatCard(
-                title: 'Resolved',
+                title: 'Assigned',
                 value: provider
-                    .countByStatus(TicketStatus.resolved)
+                    .countByStatus(TicketStatus.assigned)
                     .toString(),
-                color: const Color(0xFF22C55E),
+                color: AppColors.statusAssigned,
               ),
             ),
             const SizedBox(width: 12),
@@ -125,7 +134,7 @@ class TicketStatsWidget extends StatelessWidget {
                 value: provider
                     .countByStatus(TicketStatus.closed)
                     .toString(),
-                color: Colors.grey,
+                color: AppColors.statusClosed,
               ),
             ),
           ],
@@ -152,8 +161,8 @@ class _StatCard extends StatelessWidget {
         return Icons.error_outline_rounded;
       case 'Progress':
         return Icons.pending_outlined;
-      case 'Resolved':
-        return Icons.check_circle_outline_rounded;
+      case 'Assigned':
+        return Icons.assignment_ind_rounded;
       case 'Closed':
         return Icons.lock_outline_rounded;
       default:

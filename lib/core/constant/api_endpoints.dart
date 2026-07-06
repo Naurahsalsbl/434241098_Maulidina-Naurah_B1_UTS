@@ -12,6 +12,7 @@ class ApiEndpoints {
   static const String ticketsTable = 'tickets';
   static const String commentsTable = 'comments';
   static const String notificationsTable = 'notifications';
+  static const String ticketHistoryTable = 'ticket_history';
 
   // =====================
   // Supabase Storage Buckets

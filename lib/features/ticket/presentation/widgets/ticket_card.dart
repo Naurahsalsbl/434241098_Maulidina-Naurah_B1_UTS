@@ -4,11 +4,13 @@ import 'package:project_uts/features/ticket/domain/ticket_model.dart';
 
 class TicketCard extends StatelessWidget {
   final TicketModel ticket;
+  final String? assignedToName;
   final VoidCallback? onTap;
 
   const TicketCard({
     super.key,
     required this.ticket,
+    this.assignedToName,
     this.onTap,
   });
 
@@ -16,10 +18,10 @@ class TicketCard extends StatelessWidget {
     switch (status) {
       case TicketStatus.open:
         return const Color(0xFFEF4444);
+      case TicketStatus.assigned:
+        return const Color(0xFF3B82F6);
       case TicketStatus.inProgress:
         return const Color(0xFFF59E0B);
-      case TicketStatus.resolved:
-        return const Color(0xFF22C55E);
       case TicketStatus.closed:
         return Colors.grey;
     }
@@ -29,12 +31,12 @@ class TicketCard extends StatelessWidget {
     switch (status) {
       case TicketStatus.open:
         return Icons.error_outline_rounded;
+      case TicketStatus.assigned:
+        return Icons.assignment_ind_rounded;
       case TicketStatus.inProgress:
         return Icons.sync_rounded;
-      case TicketStatus.resolved:
-        return Icons.check_circle_outline_rounded;
       case TicketStatus.closed:
-        return Icons.lock_outline_rounded;
+        return Icons.check_circle_rounded;
     }
   }
 
@@ -196,7 +198,7 @@ class TicketCard extends StatelessWidget {
 
                       const Spacer(),
 
-                      if (ticket.assignedTo != null)
+                      if (ticket.assignedTo != null || assignedToName != null)
                         Container(
                           padding:
                               const EdgeInsets.symmetric(
@@ -218,7 +220,7 @@ class TicketCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                ticket.assignedTo!,
+                                assignedToName ?? ticket.assignedTo!,
                                 style: theme
                                     .textTheme.bodySmall,
                               ),

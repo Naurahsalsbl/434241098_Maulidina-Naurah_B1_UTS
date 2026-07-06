@@ -30,10 +30,46 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   }
 
   // =========================
-  // PICK IMAGE
+  // PICK IMAGE — pilih dari Kamera atau Galeri
   // =========================
   Future<void> _pickImage() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded),
+              title: const Text('Ambil dari Kamera'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final picked = await _picker.pickImage(source: source, imageQuality: 85);
 
     if (picked != null) {
       setState(() {
@@ -80,86 +116,150 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   @override
   Widget build(BuildContext context) {
     final ticketProvider = context.watch<TicketProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Buat Tiket')),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Judul',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Wajib diisi' : null,
+      
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1B2940)
+                  : const Color(0xFF2F6FE4),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
               ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
 
-              const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                        ),
+                      ),
 
-              TextFormField(
-                controller: _descCtrl,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Deskripsi',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Wajib diisi' : null,
-              ),
-
-              const SizedBox(height: 12),
-
-              // =========================
-              // LAMPIRAN
-              // =========================
-              TextButton.icon(
-                onPressed: _pickImage,
-                icon: const Icon(Icons.attach_file),
-                label: const Text('Tambah Lampiran'),
-              ),
-
-              if (_attachment != null) ...[
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    _attachment!,
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed:
-                      ticketProvider.isCreating ? null : _submit,
-                  child: ticketProvider.isCreating
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                      const Expanded(
+                        child: Text(
+                          "Buat Tiket",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
                           ),
-                        )
-                      : const Text('Kirim Tiket'),
+                        ),
+                      ),
+
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [ 
+                          SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _titleCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Judul',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Wajib diisi' : null,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    TextFormField(
+                      controller: _descCtrl,
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: 'Deskripsi',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Wajib diisi' : null,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // =========================
+                    // LAMPIRAN
+                    // =========================
+                    TextButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.attach_file),
+                      label: const Text('Tambah Lampiran'),
+                    ),
+
+                    if (_attachment != null) ...[
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          _attachment!,
+                          height: 160,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed:
+                            ticketProvider.isCreating ? null : _submit,
+                        child: ticketProvider.isCreating
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Kirim Tiket'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
+                  
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
+      
     );
   }
 }

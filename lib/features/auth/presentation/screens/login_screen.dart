@@ -57,11 +57,15 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 32),
-                Icon(
-                  Icons.confirmation_number_outlined,
-                  size: 48,
-                  color: theme.colorScheme.primary,
+                const SizedBox(height: 40),
+                ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Image.asset(
+                  'assets/icons/icon.png',
+                  width: 72,
+                  height: 72,
+                  fit: BoxFit.cover,
+                ),
                 ),
                 const SizedBox(height: 24),
                 Text('Selamat datang',

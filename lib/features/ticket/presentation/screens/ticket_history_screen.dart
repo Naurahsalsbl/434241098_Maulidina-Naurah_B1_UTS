@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:project_uts/features/auth/presentation/providers/auth_provider.dart';
 import 'package:project_uts/features/ticket/presentation/providers/ticket_provider.dart';
 import 'package:project_uts/features/ticket/domain/ticket_model.dart';
 import 'package:project_uts/features/ticket/presentation/screens/ticket_tracking_screen.dart';
+import 'package:project_uts/core/constant/app_colors.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -17,22 +19,35 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
 
-    // FULL DUMMY → ga perlu userId
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TicketProvider>().loadTickets('dummy_user');
+      _loadTickets();
     });
+  }
+
+  // Admin/Helpdesk melihat seluruh tiket, User hanya tiketnya sendiri
+  void _loadTickets() {
+    final auth = context.read<AuthProvider>();
+    final ticketProvider = context.read<TicketProvider>();
+    final user = auth.user;
+    if (user == null) return;
+
+    if (user.role == 'admin' || user.role == 'helpdesk') {
+      ticketProvider.loadAllTickets();
+    } else {
+      ticketProvider.loadTickets(user.id);
+    }
   }
 
   Color _statusColor(TicketStatus s) {
     switch (s) {
       case TicketStatus.open:
-        return Colors.red;
+        return AppColors.statusOpen;
+      case TicketStatus.assigned:
+        return AppColors.statusAssigned;
       case TicketStatus.inProgress:
-        return Colors.orange;
-      case TicketStatus.resolved:
-        return Colors.green;
+        return AppColors.statusInProgress;
       case TicketStatus.closed:
-        return Colors.grey;
+        return AppColors.statusClosed;
     }
   }
 
@@ -40,74 +55,116 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final ticketProvider = context.watch<TicketProvider>();
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    final historyTickets = ticketProvider.tickets.where((t) =>
-      t.status == TicketStatus.resolved ||
-      t.status == TicketStatus.closed
-    ).toList();
-    // DUMMY → langsung pakai semua tiket
     final sorted = [...ticketProvider.tickets]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Riwayat Tiket')),
-
-      body: ticketProvider.isLoadingTickets
-          ? const Center(child: CircularProgressIndicator())
-
-          // EMPTY STATE
-          : sorted.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1B2940)
+                  : const Color(0xFF2F6FE4),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  Row(
                     children: [
-                      Icon(
-                        Icons.history,
-                        size: 64,
-                        color:
-                            theme.colorScheme.onSurface.withOpacity(0.3),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Belum ada riwayat tiket',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withOpacity(0.5),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
                         ),
                       ),
+                      const Expanded(
+                        child: Text(
+                          "Riwayat Tiket",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 48),
                     ],
                   ),
-                )
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
 
-              // LIST DATA
-              : RefreshIndicator(
-                  onRefresh: () async {
-                    await context
-                        .read<TicketProvider>()
-                        .loadTickets('dummy_user');
-                  },
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: sorted.length,
-                    itemBuilder: (_, i) {
-                      final ticket = sorted[i];
-                      final color = _statusColor(ticket.status);
+          Expanded(
+            child: ticketProvider.isLoadingTickets
+                ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
 
-                      return _HistoryItem(
-                        ticket: ticket,
-                        color: color,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => TicketTrackingScreen(ticket: ticket),
+                // EMPTY STATE
+                : sorted.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.history,
+                              size: 64,
+                              color: theme.colorScheme.onSurface.withOpacity(0.3),
                             ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Belum ada riwayat tiket',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+
+                    // LIST DATA
+                    : RefreshIndicator(
+                        onRefresh: () async => _loadTickets(),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: sorted.length,
+                          itemBuilder: (_, i) {
+                            final ticket = sorted[i];
+                            final color = _statusColor(ticket.status);
+
+                            return _HistoryItem(
+                              ticket: ticket,
+                              color: color,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        TicketTrackingScreen(ticket: ticket),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -199,7 +256,7 @@ class _HistoryItem extends StatelessWidget {
                       const SizedBox(width: 8),
 
                       Text(
-                        ticket.id,
+                        'TKT-${ticket.id.substring(0,6).toUpperCase()}',
                         style:
                             theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.primary,

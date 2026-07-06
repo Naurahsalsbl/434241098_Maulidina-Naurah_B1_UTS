@@ -34,6 +34,7 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
       );
+      
 
       if (response.user == null) {
         _errorMessage = 'Login gagal, coba lagi';
@@ -42,7 +43,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       await _loadUserProfile(response.user!.id);
-      return true;
+      return _status == AuthStatus.authenticated;
     } on AuthException catch (e) {
       _errorMessage = _parseAuthError(e.message);
       _setStatus(AuthStatus.error);
@@ -164,6 +165,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       final session = SupabaseClientHelper.auth.currentSession;
 
+      
+
       if (session == null) {
         _setStatus(AuthStatus.unauthenticated);
         return;
@@ -195,7 +198,18 @@ class AuthProvider extends ChangeNotifier {
         email: data['email'] ?? '',
         role: data['role'] ?? 'user',
         avatar: data['avatar'],
+        isActive: data['is_active'] ?? true,
       );
+
+      // Akun dinonaktifkan Admin → paksa logout, tidak boleh masuk
+      if (!_user!.isActive) {
+        await SupabaseClientHelper.auth.signOut();
+        await AppStorage.clearUserSession();
+        _user = null;
+        _errorMessage = 'Akun Anda telah dinonaktifkan. Hubungi Admin.';
+        _setStatus(AuthStatus.error);
+        return;
+      }
 
       await AppStorage.saveUserSession(
         id: _user!.id,

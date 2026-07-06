@@ -1,14 +1,14 @@
-enum TicketStatus { open, inProgress, resolved, closed }
+enum TicketStatus { open, assigned, inProgress, closed }
 
 extension TicketStatusExt on TicketStatus {
   String get label {
     switch (this) {
       case TicketStatus.open:
         return 'Open';
+      case TicketStatus.assigned:
+        return 'Assigned';
       case TicketStatus.inProgress:
         return 'In Progress';
-      case TicketStatus.resolved:
-        return 'Resolved';
       case TicketStatus.closed:
         return 'Closed';
     }
@@ -18,9 +18,9 @@ extension TicketStatusExt on TicketStatus {
     switch (this) {
       case TicketStatus.open:
         return '🔴';
-      case TicketStatus.inProgress:
+      case TicketStatus.assigned:
         return '🟡';
-      case TicketStatus.resolved:
+      case TicketStatus.inProgress:
         return '🟢';
       case TicketStatus.closed:
         return '⚫';
@@ -54,17 +54,21 @@ class TicketModel {
   factory TicketModel.fromJson(Map<String, dynamic> json) {
     return TicketModel(
       id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
       status: TicketStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => TicketStatus.open,
       ),
-      userId: json['user_id'] as String,
+      userId: json['user_id'] as String? ?? '',
       assignedTo: json['assigned_to'] as String?,
       attachmentUrl: json['attachment_url'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : DateTime.now(),
     );
   }
 
